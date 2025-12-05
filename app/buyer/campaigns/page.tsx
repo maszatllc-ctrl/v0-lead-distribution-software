@@ -38,6 +38,7 @@ const mockLeadFilters = [
 export default function LeadFiltersPage() {
   const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [editingLeadFilter, setEditingLeadFilter] = useState<(typeof mockLeadFilters)[0] | null>(null)
+  const [leadFilters, setLeadFilters] = useState(mockLeadFilters)
   const [leadFilterStatus, setLeadFilterStatus] = useState<Record<string, boolean>>({
     "1": true,
     "2": true,
@@ -55,12 +56,12 @@ export default function LeadFiltersPage() {
   }
 
   const handleDelete = (id: string) => {
-    console.log("[v0] Deleting lead filter:", id)
+    setLeadFilters((prev) => prev.filter((filter) => filter.id !== id))
+    console.log("[v0] Deleted lead filter:", id)
   }
 
   const handleStatusToggle = (id: string, checked: boolean) => {
     setLeadFilterStatus((prev) => ({ ...prev, [id]: checked }))
-    console.log("[v0] Toggling lead filter status:", id, checked)
   }
 
   return (
@@ -91,7 +92,7 @@ export default function LeadFiltersPage() {
                 </tr>
               </thead>
               <tbody>
-                {mockLeadFilters.map((leadFilter) => (
+                {leadFilters.map((leadFilter) => (
                   <tr key={leadFilter.id} className="border-b border-border last:border-0">
                     <td className="p-4">
                       <p className="font-medium text-foreground">{leadFilter.name}</p>

@@ -4,9 +4,10 @@ import { DashboardLayout } from "@/components/dashboard-layout"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
-import { Download, Calendar, Phone, Mail, MapPin, Eye } from "lucide-react"
+import { Download, Phone, Mail, MapPin, Eye } from "lucide-react"
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { DateRangePicker } from "@/components/date-range-picker"
 
 const mockLeads = [
   {
@@ -84,10 +85,7 @@ export default function LeadsPage() {
 
         <Card className="p-4">
           <div className="flex flex-wrap gap-3">
-            <Button variant="outline" className="gap-2 bg-transparent">
-              <Calendar className="w-4 h-4" />
-              Date Range
-            </Button>
+            <DateRangePicker />
             <select className="h-10 px-3 rounded-md border border-input bg-background text-foreground">
               <option>All Types</option>
               <option>Term Life</option>

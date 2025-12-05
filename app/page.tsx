@@ -28,7 +28,7 @@ export default function HomePage() {
                 </div>
                 <h2 className="text-2xl font-semibold text-foreground">I'm a Buyer</h2>
                 <p className="text-muted-foreground">Browse and purchase high-quality leads from verified sellers</p>
-                <Link href="/buyer" className="w-full">
+                <Link href="/buyer/login" className="w-full">
                   <Button size="lg" className="w-full">
                     Go to Buyer Dashboard
                   </Button>
@@ -43,7 +43,7 @@ export default function HomePage() {
                 </div>
                 <h2 className="text-2xl font-semibold text-foreground">I'm a Seller</h2>
                 <p className="text-muted-foreground">List your leads and reach qualified buyers instantly</p>
-                <Link href="/seller" className="w-full">
+                <Link href="/seller/login" className="w-full">
                   <Button size="lg" variant="outline" className="w-full bg-transparent">
                     Go to Seller Dashboard
                   </Button>

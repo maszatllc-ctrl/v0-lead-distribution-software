@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -8,23 +10,42 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-import { Copy, Check } from "lucide-react"
+import { Copy, Check, Upload, User } from "lucide-react"
 import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 export default function BuyerSettings() {
   const [isGoogleConnected, setIsGoogleConnected] = useState(true)
   const [webhookCopied, setWebhookCopied] = useState(false)
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [smsNotifications, setSmsNotifications] = useState(false)
+  const [profileImage, setProfileImage] = useState<string | null>(null)
+  const [webhookUrl, setWebhookUrl] = useState("")
 
   const handleCopyWebhook = () => {
     setWebhookCopied(true)
     setTimeout(() => setWebhookCopied(false), 2000)
   }
 
+  const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setProfileImage(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleSaveProfile = () => {
+    console.log("[v0] Saving profile with image:", profileImage)
+    // Profile image is already updated in state and will reflect in sidebar
+  }
+
   return (
-    <DashboardLayout userType="buyer">
+    <DashboardLayout userType="buyer" profileImage={profileImage}>
       <div className="p-8 space-y-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Settings</h1>
@@ -48,6 +69,35 @@ export default function BuyerSettings() {
 
               <Separator />
 
+              <div className="flex items-center gap-6">
+                <Avatar className="w-24 h-24">
+                  <AvatarImage src={profileImage || undefined} />
+                  <AvatarFallback className="text-2xl">
+                    <User className="w-12 h-12" />
+                  </AvatarFallback>
+                </Avatar>
+                <div className="space-y-2">
+                  <Label htmlFor="profilePicture" className="cursor-pointer">
+                    <Button type="button" variant="outline" className="gap-2 bg-transparent" asChild>
+                      <span>
+                        <Upload className="w-4 h-4" />
+                        Upload Photo
+                      </span>
+                    </Button>
+                  </Label>
+                  <Input
+                    id="profilePicture"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleProfileImageChange}
+                  />
+                  <p className="text-xs text-muted-foreground">JPG, PNG or GIF. Max size 2MB.</p>
+                </div>
+              </div>
+
+              <Separator />
+
               <div className="grid gap-6 max-w-2xl">
                 <div className="grid gap-2">
                   <Label htmlFor="name">Name</Label>
@@ -67,7 +117,6 @@ export default function BuyerSettings() {
 
               <Separator />
 
-              {/* Authentication Section */}
               <div className="space-y-4 max-w-2xl">
                 <div>
                   <h3 className="font-semibold text-foreground mb-1">Authentication</h3>
@@ -117,7 +166,7 @@ export default function BuyerSettings() {
 
               <div className="flex justify-end gap-3">
                 <Button variant="outline">Cancel</Button>
-                <Button>Save Changes</Button>
+                <Button onClick={handleSaveProfile}>Save Changes</Button>
               </div>
             </Card>
           </TabsContent>
@@ -133,7 +182,6 @@ export default function BuyerSettings() {
               <Separator />
 
               <div className="space-y-6 max-w-2xl">
-                {/* Email Notifications */}
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-1">
                     <Label className="text-base">Email Notifications</Label>
@@ -146,7 +194,6 @@ export default function BuyerSettings() {
 
                 <Separator />
 
-                {/* SMS Notifications */}
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-1">
                     <Label className="text-base">SMS Notifications</Label>
@@ -155,11 +202,6 @@ export default function BuyerSettings() {
                   <Switch checked={smsNotifications} onCheckedChange={setSmsNotifications} />
                 </div>
               </div>
-
-              <div className="flex justify-end gap-3">
-                <Button variant="outline">Cancel</Button>
-                <Button>Save Preferences</Button>
-              </div>
             </Card>
           </TabsContent>
 
@@ -167,7 +209,7 @@ export default function BuyerSettings() {
           <TabsContent value="integrations" className="space-y-6">
             <Card className="p-6 space-y-6">
               <div>
-                <h2 className="text-xl font-semibold text-foreground">GoHighLevel / CRM Integration</h2>
+                <h2 className="text-xl font-semibold text-foreground">CRM Integration</h2>
                 <p className="text-sm text-muted-foreground mt-1">
                   Connect your CRM to automatically receive new leads
                 </p>
@@ -182,7 +224,8 @@ export default function BuyerSettings() {
                     <Input
                       id="webhook"
                       placeholder="https://your-crm.com/webhook/leads"
-                      defaultValue="https://gohighlevel.com/webhook/abc123"
+                      value={webhookUrl}
+                      onChange={(e) => setWebhookUrl(e.target.value)}
                     />
                     <Button
                       variant="outline"
@@ -194,14 +237,6 @@ export default function BuyerSettings() {
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">We will POST each new lead to this URL in real-time.</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="apiKey">API Key / Auth Token (optional)</Label>
-                  <Input id="apiKey" type="password" placeholder="Enter your API key or auth token" />
-                  <p className="text-xs text-muted-foreground">
-                    If your webhook requires authentication, enter your credentials here.
-                  </p>
                 </div>
 
                 <div className="p-4 bg-muted rounded-lg space-y-2">
@@ -219,15 +254,17 @@ export default function BuyerSettings() {
 }`}
                   </pre>
                 </div>
-
-                <Button variant="outline" className="w-full bg-transparent">
-                  Test Integration
-                </Button>
               </div>
 
-              <div className="flex justify-end gap-3">
-                <Button variant="outline">Cancel</Button>
-                <Button>Save Integration</Button>
+              <div className="flex justify-end">
+                <Button
+                  onClick={() => {
+                    console.log("[v0] Saving webhook URL:", webhookUrl)
+                    // Show success feedback
+                  }}
+                >
+                  Save Integration
+                </Button>
               </div>
             </Card>
           </TabsContent>

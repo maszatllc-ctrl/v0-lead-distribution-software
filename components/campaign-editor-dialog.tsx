@@ -6,8 +6,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
-import { X } from "lucide-react"
 import { useState } from "react"
 
 interface CampaignEditorDialogProps {
@@ -185,19 +183,6 @@ export function CampaignEditorDialog({ open, onOpenChange, campaign }: CampaignE
                     </button>
                   ))}
                 </div>
-              </div>
-
-              <div className="flex flex-wrap gap-1 mt-2">
-                {selectedStates.length > 0 ? (
-                  selectedStates.map((state) => (
-                    <Badge key={state} variant="secondary" className="gap-1">
-                      {state}
-                      <X className="w-3 h-3 cursor-pointer" onClick={() => toggleState(state)} />
-                    </Badge>
-                  ))
-                ) : (
-                  <p className="text-xs text-muted-foreground">No states selected</p>
-                )}
               </div>
             </div>
 

@@ -2,18 +2,20 @@
 
 import type { ReactNode } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { LayoutDashboard, Filter, Users, Wallet, Settings, TrendingUp, LogOut, Database } from "lucide-react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 interface DashboardLayoutProps {
   children: ReactNode
   userType: "buyer" | "seller"
+  profileImage?: string | null
 }
 
-export function DashboardLayout({ children, userType }: DashboardLayoutProps) {
+export function DashboardLayout({ children, userType, profileImage }: DashboardLayoutProps) {
   const pathname = usePathname()
+  const router = useRouter()
 
   const buyerNavItems = [
     { href: "/buyer", label: "Dashboard", icon: LayoutDashboard },
@@ -36,6 +38,7 @@ export function DashboardLayout({ children, userType }: DashboardLayoutProps) {
 
   const handleLogout = () => {
     console.log("[v0] Logging out")
+    router.push("/")
   }
 
   return (
@@ -43,7 +46,7 @@ export function DashboardLayout({ children, userType }: DashboardLayoutProps) {
       {/* Sidebar */}
       <aside className="w-64 border-r border-border bg-card flex flex-col">
         <div className="p-6 border-b border-border">
-          <Link href="/" className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <TrendingUp className="w-5 h-5 text-primary-foreground" />
             </div>
@@ -51,7 +54,7 @@ export function DashboardLayout({ children, userType }: DashboardLayoutProps) {
               <h1 className="font-semibold text-lg text-foreground">LeadFlow</h1>
               <p className="text-xs text-muted-foreground capitalize">{userType}</p>
             </div>
-          </Link>
+          </div>
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
@@ -80,6 +83,7 @@ export function DashboardLayout({ children, userType }: DashboardLayoutProps) {
         <div className="p-4 border-t border-border">
           <div className="flex items-center gap-3 px-3 py-2 w-full rounded-lg">
             <Avatar className="w-8 h-8">
+              {profileImage && <AvatarImage src={profileImage || "/placeholder.svg"} />}
               <AvatarFallback className="text-xs font-semibold">{userType === "buyer" ? "BU" : "SE"}</AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0 text-left">
@@ -90,7 +94,7 @@ export function DashboardLayout({ children, userType }: DashboardLayoutProps) {
             </div>
             <button
               onClick={handleLogout}
-              className="text-muted-foreground hover:text-foreground transition-colors p-1"
+              className="text-red-500 hover:text-red-600 transition-colors p-1"
               aria-label="Logout"
             >
               <LogOut className="w-4 h-4" />

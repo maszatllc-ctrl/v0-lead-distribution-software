@@ -9,12 +9,20 @@ import { useState } from "react"
 interface AddFundsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onAddFunds: (amount: number) => void
 }
 
-export function AddFundsDialog({ open, onOpenChange }: AddFundsDialogProps) {
+export function AddFundsDialog({ open, onOpenChange, onAddFunds }: AddFundsDialogProps) {
   const [amount, setAmount] = useState("100")
 
   const quickAmounts = [50, 100, 250, 500, 1000]
+
+  const handleAddFunds = () => {
+    const numAmount = Number.parseFloat(amount)
+    if (!isNaN(numAmount) && numAmount > 0) {
+      onAddFunds(numAmount)
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -77,7 +85,7 @@ export function AddFundsDialog({ open, onOpenChange }: AddFundsDialogProps) {
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={() => onOpenChange(false)}>Add Funds</Button>
+          <Button onClick={handleAddFunds}>Add Funds</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
