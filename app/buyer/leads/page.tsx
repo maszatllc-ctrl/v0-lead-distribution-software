@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { Download, Phone, Mail, MapPin, Eye } from "lucide-react"
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DateRangePicker } from "@/components/date-range-picker"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 
 const mockLeads = [
   {
@@ -86,31 +86,69 @@ const mockLeads = [
     smoker: "Non-smoker",
     coverage: "$300,000",
   },
+  {
+    id: "6",
+    name: "Jennifer Adams",
+    category: "IUL",
+    state: "WA",
+    phone: "(555) 678-9012",
+    email: "j.adams@example.com",
+    price: 68.0,
+    purchasedDate: "2025-06-05",
+    timestamp: "2025-06-05 10:15",
+    age: 38,
+    language: "English",
+    smoker: "Non-smoker",
+    coverage: "$400,000",
+  },
+  {
+    id: "7",
+    name: "David Martinez",
+    category: "Term Life",
+    state: "AZ",
+    phone: "(555) 789-0123",
+    email: "d.martinez@example.com",
+    price: 45.0,
+    purchasedDate: "2025-06-06",
+    timestamp: "2025-06-06 14:30",
+    age: 45,
+    language: "Spanish",
+    smoker: "Non-smoker",
+    coverage: "$200,000",
+  },
 ]
+
+type DateRange = {
+  from: Date | null
+  to: Date | null
+}
 
 export default function LeadsPage() {
   const [selectedLead, setSelectedLead] = useState<(typeof mockLeads)[0] | null>(null)
   const [categoryFilter, setCategoryFilter] = useState("All Categories")
-  const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | null>(null)
-  const { toast } = useToast()
+  const [dateRange, setDateRange] = useState<DateRange | null>(null)
 
-  const filteredLeads = mockLeads.filter((lead) => {
-    if (categoryFilter !== "All Categories" && lead.category !== categoryFilter) {
-      return false
-    }
-    if (dateRange) {
-      const leadDate = new Date(lead.purchasedDate)
-      const fromDate = new Date(dateRange.from)
-      const toDate = new Date(dateRange.to)
-      // Reset time to compare dates only
-      fromDate.setHours(0, 0, 0, 0)
-      toDate.setHours(23, 59, 59, 999)
-      if (leadDate < fromDate || leadDate > toDate) {
+  const filteredLeads = useMemo(() => {
+    return mockLeads.filter((lead) => {
+      if (categoryFilter !== "All Categories" && lead.category !== categoryFilter) {
         return false
       }
-    }
-    return true
-  })
+
+      if (dateRange && dateRange.from && dateRange.to) {
+        const [year, month, day] = lead.purchasedDate.split("-").map(Number)
+        const leadDate = new Date(year, month - 1, day)
+
+        const fromDate = new Date(dateRange.from.getFullYear(), dateRange.from.getMonth(), dateRange.from.getDate())
+        const toDate = new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), dateRange.to.getDate())
+
+        if (leadDate < fromDate || leadDate > toDate) {
+          return false
+        }
+      }
+
+      return true
+    })
+  }, [categoryFilter, dateRange])
 
   const handleExport = () => {
     const headers = [
@@ -155,10 +193,13 @@ export default function LeadsPage() {
     link.click()
     document.body.removeChild(link)
 
-    toast({
-      title: "Export complete",
+    toast.success("Export complete", {
       description: `${filteredLeads.length} leads exported to CSV`,
     })
+  }
+
+  const handleDateRangeChange = (range: DateRange | null) => {
+    setDateRange(range)
   }
 
   return (
@@ -171,7 +212,7 @@ export default function LeadsPage() {
 
         <Card className="p-4">
           <div className="flex flex-wrap gap-3">
-            <DateRangePicker onChange={setDateRange} />
+            <DateRangePicker onChange={handleDateRangeChange} />
             <select
               className="h-10 px-3 rounded-md border border-input bg-background text-foreground"
               value={categoryFilter}
@@ -189,6 +230,18 @@ export default function LeadsPage() {
               Export CSV
             </Button>
           </div>
+          {(categoryFilter !== "All Categories" || (dateRange && dateRange.from)) && (
+            <div className="mt-3 pt-3 border-t border-border text-sm text-muted-foreground">
+              Showing {filteredLeads.length} of {mockLeads.length} leads
+              {categoryFilter !== "All Categories" && <span> • Category: {categoryFilter}</span>}
+              {dateRange && dateRange.from && dateRange.to && (
+                <span>
+                  {" "}
+                  • Date: {dateRange.from.toLocaleDateString()} - {dateRange.to.toLocaleDateString()}
+                </span>
+              )}
+            </div>
+          )}
         </Card>
 
         <div className="grid gap-4">
@@ -201,7 +254,6 @@ export default function LeadsPage() {
               <Card key={lead.id} className="p-6 hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 space-y-3">
-                    {/* Header */}
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-semibold text-lg text-foreground">{lead.name}</h3>
                       <Badge variant="secondary">{lead.category}</Badge>
@@ -229,7 +281,6 @@ export default function LeadsPage() {
                   <div className="flex flex-col items-end gap-3 shrink-0">
                     <span className="font-semibold text-lg text-foreground">${lead.price.toFixed(2)}</span>
 
-                    {/* View Details Button */}
                     <Button
                       variant="outline"
                       size="sm"
@@ -246,7 +297,6 @@ export default function LeadsPage() {
           )}
         </div>
 
-        {/* Lead Detail Dialog */}
         <Dialog open={!!selectedLead} onOpenChange={() => setSelectedLead(null)}>
           <DialogContent className="max-w-lg">
             <DialogHeader>

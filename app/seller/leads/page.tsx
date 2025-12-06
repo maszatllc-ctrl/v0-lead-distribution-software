@@ -1,18 +1,19 @@
 "use client"
 
-import { useState } from "react"
+import type React from "react"
+
+import { useState, useMemo } from "react"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Trash2, Filter, Settings2, Download } from "lucide-react"
+import { Trash2, Filter, Settings2, Download, GripVertical } from "lucide-react"
 import { DateRangePicker } from "@/components/date-range-picker"
 import { toast } from "sonner"
 
@@ -44,7 +45,7 @@ const mockLeads: Lead[] = [
     buyer: "ABC Insurance",
     price: 45.0,
     status: "delivered",
-    timestamp: "2025-01-26 14:32",
+    timestamp: "2025-06-05 14:32",
     age: 42,
     coverage: "$500,000",
     smoker: "No",
@@ -60,7 +61,7 @@ const mockLeads: Lead[] = [
     buyer: "XYZ Agency",
     price: 38.5,
     status: "delivered",
-    timestamp: "2025-01-26 13:15",
+    timestamp: "2025-06-04 13:15",
     age: 68,
     coverage: "$15,000",
     smoker: "No",
@@ -76,7 +77,7 @@ const mockLeads: Lead[] = [
     buyer: "Unassigned",
     price: 52.0,
     status: "unassigned",
-    timestamp: "2025-01-26 11:48",
+    timestamp: "2025-06-03 11:48",
     age: 66,
     coverage: "N/A",
     smoker: "No",
@@ -92,7 +93,7 @@ const mockLeads: Lead[] = [
     buyer: "Best Leads Co",
     price: 45.0,
     status: "delivered",
-    timestamp: "2025-01-26 10:22",
+    timestamp: "2025-06-01 10:22",
     age: 35,
     coverage: "$750,000",
     smoker: "No",
@@ -100,15 +101,21 @@ const mockLeads: Lead[] = [
   },
 ]
 
-const allColumns = [
-  { key: "category", label: "Lead Category" },
-  { key: "name", label: "Lead Name" },
-  { key: "phone", label: "Phone" },
-  { key: "email", label: "Email" },
-  { key: "state", label: "State" },
-  { key: "buyer", label: "Assigned Buyer" },
-  { key: "price", label: "Price" },
-  { key: "status", label: "Status" },
+interface ColumnDef {
+  key: string
+  label: string
+  visible: boolean
+}
+
+const defaultColumns: ColumnDef[] = [
+  { key: "status", label: "Status", visible: true },
+  { key: "category", label: "Lead Category", visible: true },
+  { key: "name", label: "Lead Name", visible: true },
+  { key: "phone", label: "Phone", visible: true },
+  { key: "email", label: "Email", visible: true },
+  { key: "state", label: "State", visible: true },
+  { key: "buyer", label: "Assigned Buyer", visible: true },
+  { key: "price", label: "Price", visible: true },
 ]
 
 export default function SellerLeads() {
@@ -118,16 +125,30 @@ export default function SellerLeads() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [leads, setLeads] = useState<Lead[]>(mockLeads)
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([])
-  const [visibleColumns, setVisibleColumns] = useState<string[]>([
-    "status",
-    "category",
-    "name",
-    "phone",
-    "email",
-    "state",
-    "buyer",
-    "price",
-  ])
+  const [columns, setColumns] = useState<ColumnDef[]>(defaultColumns)
+  const [draggedColumn, setDraggedColumn] = useState<string | null>(null)
+
+  const filteredLeads = useMemo(() => {
+    return leads.filter((lead) => {
+      if (filterCategory !== "all") {
+        const categoryMap: Record<string, string> = {
+          term: "Term Life",
+          final: "Final Expense",
+          medicare: "Medicare",
+          mortgage: "Mortgage Protection",
+        }
+        if (lead.category !== categoryMap[filterCategory]) return false
+      }
+
+      if (dateRange.from || dateRange.to) {
+        const leadDate = new Date(lead.timestamp.split(" ")[0])
+        if (dateRange.from && leadDate < dateRange.from) return false
+        if (dateRange.to && leadDate > dateRange.to) return false
+      }
+
+      return true
+    })
+  }, [leads, filterCategory, dateRange])
 
   const openLeadDetails = (lead: Lead) => {
     setSelectedLead(lead)
@@ -136,7 +157,7 @@ export default function SellerLeads() {
 
   const toggleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedLeadIds(leads.map((l) => l.id))
+      setSelectedLeadIds(filteredLeads.map((l) => l.id))
     } else {
       setSelectedLeadIds([])
     }
@@ -157,21 +178,42 @@ export default function SellerLeads() {
   }
 
   const toggleColumn = (columnKey: string) => {
-    if (visibleColumns.includes(columnKey)) {
-      setVisibleColumns(visibleColumns.filter((c) => c !== columnKey))
-    } else {
-      setVisibleColumns([...visibleColumns, columnKey])
-    }
+    setColumns(columns.map((col) => (col.key === columnKey ? { ...col, visible: !col.visible } : col)))
+  }
+
+  const handleDragStart = (columnKey: string) => {
+    setDraggedColumn(columnKey)
+  }
+
+  const handleDragOver = (e: React.DragEvent, targetKey: string) => {
+    e.preventDefault()
+    if (!draggedColumn || draggedColumn === targetKey) return
+
+    const draggedIndex = columns.findIndex((col) => col.key === draggedColumn)
+    const targetIndex = columns.findIndex((col) => col.key === targetKey)
+
+    if (draggedIndex === -1 || targetIndex === -1) return
+
+    const newColumns = [...columns]
+    const [draggedItem] = newColumns.splice(draggedIndex, 1)
+    newColumns.splice(targetIndex, 0, draggedItem)
+    setColumns(newColumns)
+  }
+
+  const handleDragEnd = () => {
+    setDraggedColumn(null)
   }
 
   const handleExportCSV = () => {
-    const leadsToExport = selectedLeadIds.length > 0 ? leads.filter((l) => selectedLeadIds.includes(l.id)) : leads
+    const leadsToExport =
+      selectedLeadIds.length > 0 ? filteredLeads.filter((l) => selectedLeadIds.includes(l.id)) : filteredLeads
 
-    const headers = visibleColumns.map((key) => allColumns.find((c) => c.key === key)?.label || key)
+    const visibleCols = columns.filter((col) => col.visible)
+    const headers = visibleCols.map((col) => col.label)
     const rows = leadsToExport.map((lead) =>
-      visibleColumns.map((key) => {
-        const value = lead[key as keyof Lead]
-        if (key === "price") return `$${(value as number).toFixed(2)}`
+      visibleCols.map((col) => {
+        const value = lead[col.key as keyof Lead]
+        if (col.key === "price") return `$${(value as number).toFixed(2)}`
         return value
       }),
     )
@@ -187,10 +229,7 @@ export default function SellerLeads() {
     toast.success("Leads exported successfully")
   }
 
-  const handleSaveChanges = () => {
-    setSheetOpen(false)
-    toast.success("Lead updated successfully")
-  }
+  const visibleColumns = columns.filter((col) => col.visible)
 
   return (
     <DashboardLayout userType="seller">
@@ -203,63 +242,76 @@ export default function SellerLeads() {
         </div>
 
         <Card className="p-6 space-y-6">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              {selectedLeadIds.length > 0 && (
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                {/* Date picker on the left */}
+                <DateRangePicker onChange={(range) => setDateRange(range || {})} />
+
+                {/* Category filter next to date picker */}
+                <Select value={filterCategory} onValueChange={setFilterCategory}>
+                  <SelectTrigger className="w-[180px] gap-2">
+                    <Filter className="w-4 h-4" />
+                    <SelectValue placeholder="Filter by category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    <SelectItem value="term">Term Life</SelectItem>
+                    <SelectItem value="final">Final Expense</SelectItem>
+                    <SelectItem value="medicare">Medicare</SelectItem>
+                    <SelectItem value="mortgage">Mortgage Protection</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="gap-2 bg-transparent">
+                      <Settings2 className="w-4 h-4" />
+                      Columns
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64" align="end">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-foreground mb-3">Drag to reorder columns</p>
+                      {columns.map((column) => (
+                        <div
+                          key={column.key}
+                          draggable
+                          onDragStart={() => handleDragStart(column.key)}
+                          onDragOver={(e) => handleDragOver(e, column.key)}
+                          onDragEnd={handleDragEnd}
+                          className={`flex items-center gap-2 p-2 rounded-md cursor-move hover:bg-muted ${
+                            draggedColumn === column.key ? "opacity-50 bg-muted" : ""
+                          }`}
+                        >
+                          <GripVertical className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                          <Checkbox checked={column.visible} onCheckedChange={() => toggleColumn(column.key)} />
+                          <span className="text-sm flex-1">{column.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                {selectedLeadIds.length > 0 && (
+                  <Button variant="outline" className="gap-2 bg-transparent" onClick={handleExportCSV}>
+                    <Download className="w-4 h-4" />
+                    Export
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {selectedLeadIds.length > 0 && (
+              <div>
                 <Button variant="destructive" size="sm" onClick={handleDeleteSelected} className="gap-2">
                   <Trash2 className="w-4 h-4" />
-                  Delete {selectedLeadIds.length} {selectedLeadIds.length === 1 ? "lead" : "leads"}
+                  Delete {selectedLeadIds.length} selected
                 </Button>
-              )}
-            </div>
-
-            <div className="flex items-center gap-4">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="gap-2 bg-transparent">
-                    <Settings2 className="w-4 h-4" />
-                    Columns
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-56" align="end">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-foreground mb-3">Visible Columns</p>
-                    {allColumns.map((column) => (
-                      <label key={column.key} className="flex items-center gap-2 cursor-pointer">
-                        <Checkbox
-                          checked={visibleColumns.includes(column.key)}
-                          onCheckedChange={() => toggleColumn(column.key)}
-                        />
-                        <span className="text-sm">{column.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
-
-              <Select value={filterCategory} onValueChange={setFilterCategory}>
-                <SelectTrigger className="w-[180px] gap-2">
-                  <Filter className="w-4 h-4" />
-                  <SelectValue placeholder="Filter by category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="term">Term Life</SelectItem>
-                  <SelectItem value="final">Final Expense</SelectItem>
-                  <SelectItem value="medicare">Medicare</SelectItem>
-                  <SelectItem value="mortgage">Mortgage Protection</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <DateRangePicker onChange={(range) => setDateRange(range || {})} />
-
-              {selectedLeadIds.length > 0 && (
-                <Button variant="outline" className="gap-2 bg-transparent" onClick={handleExportCSV}>
-                  <Download className="w-4 h-4" />
-                  Export
-                </Button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           <div className="border border-border rounded-lg overflow-hidden">
@@ -268,25 +320,19 @@ export default function SellerLeads() {
                 <TableRow className="bg-muted/50">
                   <TableHead className="w-12">
                     <Checkbox
-                      checked={selectedLeadIds.length === leads.length && leads.length > 0}
+                      checked={selectedLeadIds.length === filteredLeads.length && filteredLeads.length > 0}
                       onCheckedChange={toggleSelectAll}
                     />
                   </TableHead>
-                  {visibleColumns.includes("status") && <TableHead className="font-semibold">Status</TableHead>}
-                  {visibleColumns
-                    .filter((c) => c !== "status")
-                    .map((columnKey) => {
-                      const column = allColumns.find((c) => c.key === columnKey)
-                      return column ? (
-                        <TableHead key={columnKey} className="font-semibold">
-                          {column.label}
-                        </TableHead>
-                      ) : null
-                    })}
+                  {visibleColumns.map((column) => (
+                    <TableHead key={column.key} className="font-semibold">
+                      {column.label}
+                    </TableHead>
+                  ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {leads.map((lead) => (
+                {filteredLeads.map((lead) => (
                   <TableRow
                     key={lead.id}
                     className="hover:bg-muted/30 cursor-pointer"
@@ -298,39 +344,32 @@ export default function SellerLeads() {
                         onCheckedChange={(checked) => toggleSelectLead(lead.id, checked as boolean)}
                       />
                     </TableCell>
-                    {visibleColumns.includes("status") && (
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={
-                            lead.status === "delivered"
-                              ? "bg-green-500/10 text-green-600 border-green-500/20"
-                              : "bg-orange-500/10 text-orange-600 border-orange-500/20"
-                          }
-                        >
-                          {lead.status === "delivered" ? "Delivered" : "Unassigned"}
-                        </Badge>
+                    {visibleColumns.map((column) => (
+                      <TableCell key={column.key}>
+                        {column.key === "status" ? (
+                          <Badge
+                            variant="outline"
+                            className={
+                              lead.status === "delivered"
+                                ? "bg-green-500/10 text-green-600 border-green-500/20"
+                                : "bg-orange-500/10 text-orange-600 border-orange-500/20"
+                            }
+                          >
+                            {lead.status === "delivered" ? "Delivered" : "Unassigned"}
+                          </Badge>
+                        ) : column.key === "price" ? (
+                          <span className="font-semibold">${lead.price.toFixed(2)}</span>
+                        ) : column.key === "category" ? (
+                          <span className="font-medium">{lead[column.key as keyof Lead]}</span>
+                        ) : (
+                          <span
+                            className={column.key === "phone" || column.key === "email" ? "text-muted-foreground" : ""}
+                          >
+                            {lead[column.key as keyof Lead]}
+                          </span>
+                        )}
                       </TableCell>
-                    )}
-                    {visibleColumns.includes("category") && (
-                      <TableCell className="font-medium text-foreground">{lead.category}</TableCell>
-                    )}
-                    {visibleColumns.includes("name") && <TableCell className="text-foreground">{lead.name}</TableCell>}
-                    {visibleColumns.includes("phone") && (
-                      <TableCell className="text-muted-foreground">{lead.phone}</TableCell>
-                    )}
-                    {visibleColumns.includes("email") && (
-                      <TableCell className="text-muted-foreground">{lead.email}</TableCell>
-                    )}
-                    {visibleColumns.includes("state") && (
-                      <TableCell className="text-foreground">{lead.state}</TableCell>
-                    )}
-                    {visibleColumns.includes("buyer") && (
-                      <TableCell className="text-foreground">{lead.buyer}</TableCell>
-                    )}
-                    {visibleColumns.includes("price") && (
-                      <TableCell className="font-semibold text-foreground">${lead.price.toFixed(2)}</TableCell>
-                    )}
+                    ))}
                   </TableRow>
                 ))}
               </TableBody>
@@ -340,119 +379,106 @@ export default function SellerLeads() {
       </div>
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="sm:max-w-[540px] overflow-y-auto">
+        <SheetContent className="sm:max-w-[500px] overflow-y-auto px-6">
           <SheetHeader>
             <SheetTitle>Lead Details</SheetTitle>
-            <SheetDescription>View and edit full lead information</SheetDescription>
           </SheetHeader>
           {selectedLead && (
             <div className="space-y-6 mt-6">
+              {/* Lead Info Section */}
               <div className="space-y-4">
-                <div className="grid gap-2">
-                  <Label>Lead Name</Label>
-                  <Input value={selectedLead.name} readOnly />
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant="outline"
+                    className={
+                      selectedLead.status === "delivered"
+                        ? "bg-green-500/10 text-green-600 border-green-500/20"
+                        : "bg-orange-500/10 text-orange-600 border-orange-500/20"
+                    }
+                  >
+                    {selectedLead.status === "delivered" ? "Delivered" : "Unassigned"}
+                  </Badge>
+                  <Badge variant="outline">{selectedLead.category}</Badge>
                 </div>
 
-                <div className="grid gap-2">
-                  <Label>Lead Category</Label>
-                  <Input value={selectedLead.category} readOnly />
-                </div>
-
-                <div className="grid gap-2">
-                  <Label>Phone</Label>
-                  <Input value={selectedLead.phone} readOnly />
-                </div>
-
-                <div className="grid gap-2">
-                  <Label>Email</Label>
-                  <Input value={selectedLead.email} readOnly />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label>State</Label>
-                    <Input value={selectedLead.state} readOnly />
+                <div className="grid gap-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">Name</Label>
+                      <p className="text-foreground font-medium mt-1">{selectedLead.name}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">Age</Label>
+                      <p className="text-foreground font-medium mt-1">{selectedLead.age}</p>
+                    </div>
                   </div>
 
-                  <div className="grid gap-2">
-                    <Label>Age</Label>
-                    <Input value={selectedLead.age} readOnly />
-                  </div>
-                </div>
-
-                <div className="grid gap-2">
-                  <Label>Coverage Amount</Label>
-                  <Input value={selectedLead.coverage} readOnly />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label>Smoker</Label>
-                    <Input value={selectedLead.smoker} readOnly />
+                  <div>
+                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Phone</Label>
+                    <p className="text-foreground font-medium mt-1">{selectedLead.phone}</p>
                   </div>
 
-                  <div className="grid gap-2">
-                    <Label>Language</Label>
-                    <Input value={selectedLead.language} readOnly />
-                  </div>
-                </div>
-
-                <div className="grid gap-2">
-                  <Label>Assigned Buyer</Label>
-                  <Select defaultValue={selectedLead.buyer.toLowerCase().replace(" ", "-")}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">Unassigned</SelectItem>
-                      <SelectItem value="abc-insurance">ABC Insurance</SelectItem>
-                      <SelectItem value="xyz-agency">XYZ Agency</SelectItem>
-                      <SelectItem value="best-leads-co">Best Leads Co</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label>Price</Label>
-                    <Input value={`$${selectedLead.price.toFixed(2)}`} readOnly />
+                  <div>
+                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Email</Label>
+                    <p className="text-foreground font-medium mt-1">{selectedLead.email}</p>
                   </div>
 
-                  <div className="grid gap-2">
-                    <Label>Status</Label>
-                    <Badge
-                      variant="outline"
-                      className={
-                        selectedLead.status === "delivered"
-                          ? "bg-green-500/10 text-green-600 border-green-500/20"
-                          : "bg-orange-500/10 text-orange-600 border-orange-500/20"
-                      }
-                    >
-                      {selectedLead.status === "delivered" ? "Delivered" : "Unassigned"}
-                    </Badge>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">State</Label>
+                      <p className="text-foreground font-medium mt-1">{selectedLead.state}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">Coverage</Label>
+                      <p className="text-foreground font-medium mt-1">{selectedLead.coverage}</p>
+                    </div>
                   </div>
-                </div>
 
-                <div className="pt-4 border-t border-border">
-                  <h3 className="text-sm font-semibold text-foreground mb-3">Delivery Log</h3>
-                  <div className="space-y-2 text-sm text-muted-foreground">
-                    <p>Lead created: {selectedLead.timestamp}</p>
-                    {selectedLead.status === "delivered" && (
-                      <p>
-                        Delivered to {selectedLead.buyer}: {selectedLead.timestamp}
-                      </p>
-                    )}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">Smoker</Label>
+                      <p className="text-foreground font-medium mt-1">{selectedLead.smoker}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">Language</Label>
+                      <p className="text-foreground font-medium mt-1">{selectedLead.language}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">Price</Label>
+                      <p className="text-foreground font-semibold mt-1">${selectedLead.price.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">Assigned Buyer</Label>
+                      <p className="text-foreground font-medium mt-1">{selectedLead.buyer}</p>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="flex gap-3">
-                <Button className="flex-1" onClick={handleSaveChanges}>
-                  Save Changes
-                </Button>
-                <Button variant="outline" onClick={() => setSheetOpen(false)}>
-                  Cancel
-                </Button>
+              {/* Delivery Log Section */}
+              <div className="pt-4 border-t border-border">
+                <h3 className="text-sm font-semibold text-foreground mb-3">Delivery Log</h3>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 rounded-full bg-blue-500 mt-2" />
+                    <div>
+                      <p className="text-sm text-foreground">Lead created</p>
+                      <p className="text-xs text-muted-foreground">{selectedLead.timestamp}</p>
+                    </div>
+                  </div>
+                  {selectedLead.status === "delivered" && (
+                    <div className="flex items-start gap-3">
+                      <div className="w-2 h-2 rounded-full bg-green-500 mt-2" />
+                      <div>
+                        <p className="text-sm text-foreground">Delivered to {selectedLead.buyer}</p>
+                        <p className="text-xs text-muted-foreground">{selectedLead.timestamp}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}

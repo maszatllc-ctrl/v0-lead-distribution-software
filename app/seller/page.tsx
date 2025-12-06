@@ -1,11 +1,42 @@
 "use client"
 
+import { useState } from "react"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { DollarSign, Database, Users, AlertCircle, TrendingUp, Plus } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { DollarSign, Database, Users, AlertCircle, TrendingUp, Plus, CalendarIcon } from "lucide-react"
 import Link from "next/link"
+import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths } from "date-fns"
+
+const presets = [
+  { label: "All Time", getValue: () => ({ from: null, to: null }) },
+  { label: "Today", getValue: () => ({ from: new Date(), to: new Date() }) },
+  { label: "Yesterday", getValue: () => ({ from: subDays(new Date(), 1), to: subDays(new Date(), 1) }) },
+  { label: "Last 7 days", getValue: () => ({ from: subDays(new Date(), 6), to: new Date() }) },
+  { label: "Last 14 days", getValue: () => ({ from: subDays(new Date(), 13), to: new Date() }) },
+  { label: "Last 30 days", getValue: () => ({ from: subDays(new Date(), 29), to: new Date() }) },
+  {
+    label: "This week",
+    getValue: () => ({
+      from: startOfWeek(new Date(), { weekStartsOn: 0 }),
+      to: endOfWeek(new Date(), { weekStartsOn: 0 }),
+    }),
+  },
+  {
+    label: "Last week",
+    getValue: () => ({
+      from: startOfWeek(subWeeks(new Date(), 1), { weekStartsOn: 0 }),
+      to: endOfWeek(subWeeks(new Date(), 1), { weekStartsOn: 0 }),
+    }),
+  },
+  { label: "This month", getValue: () => ({ from: startOfMonth(new Date()), to: endOfMonth(new Date()) }) },
+  {
+    label: "Last month",
+    getValue: () => ({ from: startOfMonth(subMonths(new Date(), 1)), to: endOfMonth(subMonths(new Date(), 1)) }),
+  },
+]
 
 const recentLeads = [
   {
@@ -81,6 +112,23 @@ const recentLeads = [
 ]
 
 export default function SellerDashboard() {
+  const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null }>({ from: null, to: null })
+  const [selectedPreset, setSelectedPreset] = useState("All Time")
+  const [isOpen, setIsOpen] = useState(false)
+
+  const handlePresetSelect = (preset: (typeof presets)[0]) => {
+    const range = preset.getValue()
+    setDateRange(range)
+    setSelectedPreset(preset.label)
+    setIsOpen(false)
+  }
+
+  const getDisplayText = () => {
+    if (!dateRange.from || !dateRange.to) return selectedPreset
+    if (selectedPreset !== "All Time") return selectedPreset
+    return `${format(dateRange.from, "MMM d, yyyy")} - ${format(dateRange.to, "MMM d, yyyy")}`
+  }
+
   return (
     <DashboardLayout userType="seller">
       <div className="p-8 space-y-8">
@@ -90,12 +138,37 @@ export default function SellerDashboard() {
             <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
             <p className="text-muted-foreground mt-1">Monitor your performance and manage your lead distribution.</p>
           </div>
-          <Link href="/seller/buyers/new">
-            <Button className="gap-2">
-              <Plus className="w-4 h-4" />
-              Add Buyer
-            </Button>
-          </Link>
+          <div className="flex items-center gap-3">
+            <Popover open={isOpen} onOpenChange={setIsOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="gap-2 min-w-[160px] justify-start bg-transparent">
+                  <CalendarIcon className="w-4 h-4" />
+                  <span>{getDisplayText()}</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <div className="p-2 space-y-1">
+                  {presets.map((preset) => (
+                    <button
+                      key={preset.label}
+                      onClick={() => handlePresetSelect(preset)}
+                      className={`w-full text-left px-3 py-2 text-[13px] rounded-md transition-colors ${
+                        selectedPreset === preset.label ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+            <Link href="/seller/buyers/new">
+              <Button className="gap-2">
+                <Plus className="w-4 h-4" />
+                Add Buyer
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Top Metrics */}
