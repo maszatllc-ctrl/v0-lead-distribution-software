@@ -7,6 +7,10 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
+import { useState } from "react"
+import { CampaignEditorDialog } from "@/components/campaign-editor-dialog"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 const mockRecentLeads = [
   {
@@ -52,6 +56,24 @@ const mockRecentLeads = [
 ]
 
 export default function BuyerDashboard() {
+  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false)
+  const router = useRouter()
+
+  const handleFilterSave = (filter: any) => {
+    const existingFilters = JSON.parse(sessionStorage.getItem("leadFilters") || "[]")
+    const newFilter = {
+      id: Date.now().toString(),
+      ...filter,
+      leadsDelivered: 0,
+      price: 45.0,
+    }
+    sessionStorage.setItem("leadFilters", JSON.stringify([...existingFilters, newFilter]))
+
+    toast.success(`"${filter.name}" created successfully`)
+
+    router.push("/buyer/campaigns")
+  }
+
   return (
     <DashboardLayout userType="buyer">
       <div className="p-8 space-y-8">
@@ -95,20 +117,21 @@ export default function BuyerDashboard() {
             </Card>
           </Link>
 
-          <Link href="/buyer/campaigns">
-            <Card className="p-6 bg-gradient-to-br from-foreground to-foreground/80 hover:from-foreground/90 hover:to-foreground/70 transition-all cursor-pointer group h-full">
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <div className="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center">
-                    <Plus className="w-6 h-6 text-background" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-background">Create Lead Filter</h3>
-                  <p className="text-sm text-background/70">Set up a new lead acquisition filter</p>
+          <Card
+            className="p-6 bg-gradient-to-br from-foreground to-foreground/80 hover:from-foreground/90 hover:to-foreground/70 transition-all cursor-pointer group h-full"
+            onClick={() => setIsFilterDialogOpen(true)}
+          >
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center">
+                  <Plus className="w-6 h-6 text-background" />
                 </div>
-                <ArrowRight className="w-6 h-6 text-background/40 group-hover:text-background group-hover:translate-x-1 transition-all" />
+                <h3 className="text-xl font-semibold text-background">Buy Leads</h3>
+                <p className="text-sm text-background/70">Set up a new lead acquisition campaign</p>
               </div>
-            </Card>
-          </Link>
+              <ArrowRight className="w-6 h-6 text-background/40 group-hover:text-background group-hover:translate-x-1 transition-all" />
+            </div>
+          </Card>
         </div>
 
         {/* Recent Leads Activity Feed */}
@@ -149,6 +172,13 @@ export default function BuyerDashboard() {
           </div>
         </Card>
       </div>
+
+      <CampaignEditorDialog
+        open={isFilterDialogOpen}
+        onOpenChange={setIsFilterDialogOpen}
+        campaign={null}
+        onSave={handleFilterSave}
+      />
     </DashboardLayout>
   )
 }

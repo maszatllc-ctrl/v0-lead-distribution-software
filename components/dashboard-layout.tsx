@@ -4,7 +4,19 @@ import type { ReactNode } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, Filter, Users, Wallet, Settings, TrendingUp, LogOut, Database } from "lucide-react"
+import {
+  LayoutDashboard,
+  Filter,
+  Users,
+  Wallet,
+  Settings,
+  TrendingUp,
+  LogOut,
+  Database,
+  ShoppingCart,
+  Truck,
+  Tags,
+} from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 interface DashboardLayoutProps {
@@ -19,7 +31,7 @@ export function DashboardLayout({ children, userType, profileImage }: DashboardL
 
   const buyerNavItems = [
     { href: "/buyer", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/buyer/campaigns", label: "Lead Filters", icon: Filter },
+    { href: "/buyer/campaigns", label: "Buy Leads", icon: ShoppingCart },
     { href: "/buyer/leads", label: "Leads", icon: Users },
     { href: "/buyer/wallet", label: "Wallet", icon: Wallet },
     { href: "/buyer/settings", label: "Settings", icon: Settings },
@@ -28,17 +40,21 @@ export function DashboardLayout({ children, userType, profileImage }: DashboardL
   const sellerNavItems = [
     { href: "/seller", label: "Dashboard", icon: LayoutDashboard },
     { href: "/seller/buyers", label: "Buyers", icon: Users },
+    { href: "/seller/suppliers", label: "Suppliers", icon: Truck },
     { href: "/seller/leads", label: "Leads", icon: Database },
-    { href: "/seller/campaigns", label: "Lead Filters", icon: Filter },
-    { href: "/seller/billing", label: "Billing", icon: Wallet },
+    { href: "/seller/categories", label: "Categories & Fields", icon: Tags },
+    { href: "/seller/campaigns", label: "Campaigns", icon: Filter },
     { href: "/seller/settings", label: "Settings", icon: Settings },
   ]
 
   const navItems = userType === "buyer" ? buyerNavItems : sellerNavItems
 
   const handleLogout = () => {
-    console.log("[v0] Logging out")
     router.push("/")
+  }
+
+  const handleProfileClick = () => {
+    router.push(`/${userType}/settings?tab=profile`)
   }
 
   return (
@@ -82,16 +98,21 @@ export function DashboardLayout({ children, userType, profileImage }: DashboardL
 
         <div className="p-4 border-t border-border">
           <div className="flex items-center gap-3 px-3 py-2 w-full rounded-lg">
-            <Avatar className="w-8 h-8">
-              {profileImage && <AvatarImage src={profileImage || "/placeholder.svg"} />}
-              <AvatarFallback className="text-xs font-semibold">{userType === "buyer" ? "BU" : "SE"}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0 text-left">
-              <p className="text-sm font-medium text-foreground truncate">
-                {userType === "buyer" ? "Buyer Account" : "Seller Account"}
-              </p>
-              <p className="text-xs text-muted-foreground truncate">{userType}@leadflow.com</p>
-            </div>
+            <button
+              onClick={handleProfileClick}
+              className="flex items-center gap-3 flex-1 min-w-0 text-left hover:opacity-80 transition-opacity"
+            >
+              <Avatar className="w-8 h-8">
+                {profileImage && <AvatarImage src={profileImage || "/placeholder.svg"} />}
+                <AvatarFallback className="text-xs font-semibold">{userType === "buyer" ? "BU" : "SE"}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">
+                  {userType === "buyer" ? "Buyer Account" : "Seller Account"}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">{userType}@leadflow.com</p>
+              </div>
+            </button>
             <button
               onClick={handleLogout}
               className="text-red-500 hover:text-red-600 transition-colors p-1"

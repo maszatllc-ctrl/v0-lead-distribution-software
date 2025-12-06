@@ -1,17 +1,20 @@
 "use client"
 
+import type React from "react"
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 interface CampaignEditorDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   campaign: any
+  onSave?: (filter: any) => void
 }
 
 const US_STATES = [
@@ -67,9 +70,37 @@ const US_STATES = [
   "WY",
 ]
 
-export function CampaignEditorDialog({ open, onOpenChange, campaign }: CampaignEditorDialogProps) {
-  const [isActive, setIsActive] = useState(campaign?.status === "active" ?? true)
+const CATEGORY_PRICING: Record<string, number> = {
+  "Term Life": 45.0,
+  "Final Expense": 52.0,
+  "Mortgage Protection": 48.0,
+  IUL: 68.0,
+  "Whole Life": 55.0,
+}
+
+export function CampaignEditorDialog({ open, onOpenChange, campaign, onSave }: CampaignEditorDialogProps) {
+  const [isActive, setIsActive] = useState(true)
   const [selectedStates, setSelectedStates] = useState<string[]>(["CA", "TX", "NY"])
+  const [filterName, setFilterName] = useState("")
+  const [dailyCap, setDailyCap] = useState("")
+  const [category, setCategory] = useState("Term Life")
+
+  useEffect(() => {
+    if (open) {
+      if (campaign) {
+        setIsActive(campaign.status === "active")
+        setFilterName(campaign.name || "")
+        setDailyCap(campaign.dailyCap?.toString() || "")
+        setCategory(campaign.category || "Term Life")
+      } else {
+        setIsActive(true)
+        setFilterName("")
+        setDailyCap("")
+        setSelectedStates(["CA", "TX", "NY"])
+        setCategory("Term Life")
+      }
+    }
+  }, [open, campaign])
 
   const toggleState = (state: string) => {
     setSelectedStates((prev) => (prev.includes(state) ? prev.filter((s) => s !== state) : [...prev, state]))
@@ -83,37 +114,67 @@ export function CampaignEditorDialog({ open, onOpenChange, campaign }: CampaignE
     setSelectedStates([])
   }
 
+  const handleDailyCapChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    // Allow empty or positive numbers only
+    if (value === "" || (Number(value) > 0 && !value.includes("-"))) {
+      setDailyCap(value)
+    }
+  }
+
+  const handleSave = () => {
+    if (onSave) {
+      const statesDisplay = selectedStates.length === US_STATES.length ? "All States" : selectedStates.join(", ")
+      onSave({
+        name: filterName,
+        dailyCap: dailyCap ? Number.parseInt(dailyCap) : null,
+        status: isActive ? "active" : "paused",
+        states: selectedStates,
+        category: category,
+        price: CATEGORY_PRICING[category],
+        filters: `States: ${statesDisplay}`,
+      })
+    }
+    onOpenChange(false)
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{campaign ? "Edit Lead Filter" : "Create Lead Filter"}</DialogTitle>
+          <DialogTitle>{campaign ? "Edit Campaign" : "Create Campaign"}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
           {/* Campaign Name */}
           <div className="space-y-2">
-            <Label htmlFor="name">Lead Filter Name</Label>
-            <Input id="name" defaultValue={campaign?.name} placeholder="e.g. California Term Life" />
+            <Label htmlFor="name">Campaign Name</Label>
+            <Input
+              id="name"
+              value={filterName}
+              onChange={(e) => setFilterName(e.target.value)}
+              placeholder="e.g. California Term Life"
+            />
           </div>
 
           {/* Status */}
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Lead Filter Status</Label>
-              <p className="text-sm text-muted-foreground">Enable or pause this lead filter</p>
+              <Label>Campaign Status</Label>
+              <p className="text-sm text-muted-foreground">Enable or pause this campaign</p>
             </div>
             <Switch checked={isActive} onCheckedChange={setIsActive} />
           </div>
 
           <Separator />
 
-          {/* Lead Type */}
           <div className="space-y-2">
-            <Label htmlFor="leadType">Lead Type</Label>
+            <Label htmlFor="category">Category</Label>
             <select
-              id="leadType"
+              id="category"
               className="w-full h-10 px-3 rounded-md border border-input bg-background text-foreground"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
             >
               <option>Term Life</option>
               <option>Final Expense</option>
@@ -123,23 +184,29 @@ export function CampaignEditorDialog({ open, onOpenChange, campaign }: CampaignE
             </select>
           </div>
 
-          {/* Pricing */}
           <div className="space-y-2">
-            <Label htmlFor="price">Price per Lead (read-only)</Label>
+            <Label htmlFor="price">Price per Lead</Label>
             <Input
               id="price"
               type="text"
-              defaultValue={`$${campaign?.price.toFixed(2) ?? "45.00"}`}
+              value={`$${CATEGORY_PRICING[category]?.toFixed(2) ?? "45.00"}`}
               disabled
               className="bg-muted"
             />
-            <p className="text-xs text-muted-foreground">Pricing is set by the seller and cannot be changed</p>
+            <p className="text-xs text-muted-foreground">Pricing is set by the seller based on the category</p>
           </div>
 
           {/* Daily Cap */}
           <div className="space-y-2">
             <Label htmlFor="dailyCap">Daily Cap (optional)</Label>
-            <Input id="dailyCap" type="number" defaultValue={campaign?.dailyCap} placeholder="e.g. 20" />
+            <Input
+              id="dailyCap"
+              type="number"
+              value={dailyCap}
+              onChange={handleDailyCapChange}
+              placeholder="e.g. 20"
+              min="1"
+            />
             <p className="text-xs text-muted-foreground">Maximum leads per day (leave empty for unlimited)</p>
           </div>
 
@@ -190,11 +257,11 @@ export function CampaignEditorDialog({ open, onOpenChange, campaign }: CampaignE
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="ageMin">Min Age</Label>
-                <Input id="ageMin" type="number" placeholder="e.g. 25" />
+                <Input id="ageMin" type="number" placeholder="e.g. 25" min="1" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="ageMax">Max Age</Label>
-                <Input id="ageMax" type="number" placeholder="e.g. 65" />
+                <Input id="ageMax" type="number" placeholder="e.g. 65" min="1" />
               </div>
             </div>
 
@@ -229,11 +296,11 @@ export function CampaignEditorDialog({ open, onOpenChange, campaign }: CampaignE
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="coverageMin">Min Coverage</Label>
-                <Input id="coverageMin" type="number" placeholder="e.g. 100000" />
+                <Input id="coverageMin" type="number" placeholder="e.g. 100000" min="1" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="coverageMax">Max Coverage</Label>
-                <Input id="coverageMax" type="number" placeholder="e.g. 500000" />
+                <Input id="coverageMax" type="number" placeholder="e.g. 500000" min="1" />
               </div>
             </div>
           </div>
@@ -243,7 +310,7 @@ export function CampaignEditorDialog({ open, onOpenChange, campaign }: CampaignE
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={() => onOpenChange(false)}>Save Lead Filter</Button>
+          <Button onClick={handleSave}>Save Campaign</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -19,11 +19,16 @@ import {
 import { cn } from "@/lib/utils"
 
 type DateRange = {
-  from: Date
-  to: Date
+  from: Date | null
+  to: Date | null
+}
+
+interface DateRangePickerProps {
+  onChange?: (range: DateRange | null) => void
 }
 
 const presets = [
+  { label: "All Time", getValue: () => ({ from: null, to: null }) },
   { label: "Today", getValue: () => ({ from: startOfDay(new Date()), to: endOfDay(new Date()) }) },
   {
     label: "Yesterday",
@@ -43,13 +48,12 @@ const presets = [
   },
 ]
 
-export function DateRangePicker() {
-  const [date, setDate] = useState<DateRange>({
-    from: startOfDay(subDays(new Date(), 6)),
-    to: endOfDay(new Date()),
+export function DateRangePicker({ onChange }: DateRangePickerProps) {
+  const [tempDate, setTempDate] = useState<DateRange>({
+    from: null,
+    to: null,
   })
-  const [tempDate, setTempDate] = useState<DateRange>(date)
-  const [selectedPreset, setSelectedPreset] = useState("Last 7 days")
+  const [selectedPreset, setSelectedPreset] = useState("All Time")
   const [open, setOpen] = useState(false)
 
   const handlePresetClick = (preset: (typeof presets)[0]) => {
@@ -59,7 +63,7 @@ export function DateRangePicker() {
   }
 
   const handleUpdate = () => {
-    setDate(tempDate)
+    onChange?.(tempDate.from && tempDate.to ? tempDate : null)
     setOpen(false)
   }
 
@@ -68,7 +72,7 @@ export function DateRangePicker() {
       <PopoverTrigger asChild>
         <Button variant="outline" className="gap-2 bg-transparent">
           <CalendarIcon className="w-4 h-4" />
-          {selectedPreset}
+          {selectedPreset || "Select dates"}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
@@ -95,7 +99,7 @@ export function DateRangePicker() {
           <div className="p-3">
             <Calendar
               mode="range"
-              selected={{ from: tempDate.from, to: tempDate.to }}
+              selected={tempDate.from && tempDate.to ? { from: tempDate.from, to: tempDate.to } : undefined}
               onSelect={(range) => {
                 if (range?.from) {
                   setTempDate({
@@ -108,7 +112,11 @@ export function DateRangePicker() {
               numberOfMonths={2}
             />
             <div className="flex justify-end gap-2 mt-3 pt-3 border-t border-border">
-              <Button size="sm" onClick={handleUpdate}>
+              <Button
+                size="sm"
+                onClick={handleUpdate}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
                 Update
               </Button>
             </div>

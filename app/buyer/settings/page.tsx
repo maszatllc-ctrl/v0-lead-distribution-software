@@ -10,22 +10,32 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-import { Copy, Check, Upload, User } from "lucide-react"
+import { Copy, Check, Upload, User, Eye, EyeOff } from "lucide-react"
 import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { toast } from "sonner"
 
 export default function BuyerSettings() {
-  const [isGoogleConnected, setIsGoogleConnected] = useState(true)
+  const [isGoogleConnected, setIsGoogleConnected] = useState(false)
   const [webhookCopied, setWebhookCopied] = useState(false)
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [smsNotifications, setSmsNotifications] = useState(false)
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [webhookUrl, setWebhookUrl] = useState("")
+  const [showPasswordFields, setShowPasswordFields] = useState(false)
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const handleCopyWebhook = () => {
-    setWebhookCopied(true)
-    setTimeout(() => setWebhookCopied(false), 2000)
+    if (webhookUrl) {
+      navigator.clipboard.writeText(webhookUrl)
+      setWebhookCopied(true)
+      setTimeout(() => setWebhookCopied(false), 2000)
+      toast.success("Webhook URL copied to clipboard")
+    }
   }
 
   const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -40,8 +50,20 @@ export default function BuyerSettings() {
   }
 
   const handleSaveProfile = () => {
-    console.log("[v0] Saving profile with image:", profileImage)
-    // Profile image is already updated in state and will reflect in sidebar
+    toast.success("Profile saved successfully")
+  }
+
+  const handleChangePassword = () => {
+    if (newPassword && newPassword === confirmPassword) {
+      setShowPasswordFields(false)
+      setNewPassword("")
+      setConfirmPassword("")
+      toast.success("Password changed successfully")
+    }
+  }
+
+  const handleSaveIntegration = () => {
+    toast.success("Integration saved successfully")
   }
 
   return (
@@ -118,6 +140,96 @@ export default function BuyerSettings() {
               <Separator />
 
               <div className="space-y-4 max-w-2xl">
+                {!isGoogleConnected && (
+                  <div className="space-y-4">
+                    {!showPasswordFields ? (
+                      <Button
+                        variant="outline"
+                        className="w-full bg-transparent"
+                        onClick={() => setShowPasswordFields(true)}
+                      >
+                        Change Password
+                      </Button>
+                    ) : (
+                      <div className="space-y-4 p-4 border border-border rounded-lg">
+                        <div className="grid gap-2">
+                          <Label htmlFor="newPassword">New Password</Label>
+                          <div className="relative">
+                            <Input
+                              id="newPassword"
+                              type={showNewPassword ? "text" : "password"}
+                              placeholder="Enter new password"
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              className="pr-10"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                              onClick={() => setShowNewPassword(!showNewPassword)}
+                            >
+                              {showNewPassword ? (
+                                <EyeOff className="w-4 h-4 text-muted-foreground" />
+                              ) : (
+                                <Eye className="w-4 h-4 text-muted-foreground" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                          <div className="relative">
+                            <Input
+                              id="confirmPassword"
+                              type={showConfirmPassword ? "text" : "password"}
+                              placeholder="Confirm new password"
+                              value={confirmPassword}
+                              onChange={(e) => setConfirmPassword(e.target.value)}
+                              className="pr-10"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            >
+                              {showConfirmPassword ? (
+                                <EyeOff className="w-4 h-4 text-muted-foreground" />
+                              ) : (
+                                <Eye className="w-4 h-4 text-muted-foreground" />
+                              )}
+                            </Button>
+                          </div>
+                          {confirmPassword && newPassword !== confirmPassword && (
+                            <p className="text-xs text-destructive">Passwords do not match</p>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setShowPasswordFields(false)
+                              setNewPassword("")
+                              setConfirmPassword("")
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            onClick={handleChangePassword}
+                            disabled={!newPassword || newPassword !== confirmPassword}
+                          >
+                            Update Password
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div>
                   <h3 className="font-semibold text-foreground mb-1">Authentication</h3>
                   <p className="text-sm text-muted-foreground">Manage your login methods</p>
@@ -158,14 +270,9 @@ export default function BuyerSettings() {
                     <Button size="sm">Connect Google</Button>
                   )}
                 </div>
-
-                <Button variant="outline" className="w-full bg-transparent">
-                  Change Password
-                </Button>
               </div>
 
-              <div className="flex justify-end gap-3">
-                <Button variant="outline">Cancel</Button>
+              <div className="flex justify-end">
                 <Button onClick={handleSaveProfile}>Save Changes</Button>
               </div>
             </Card>
@@ -232,6 +339,7 @@ export default function BuyerSettings() {
                       size="icon"
                       onClick={handleCopyWebhook}
                       className="shrink-0 bg-transparent"
+                      disabled={!webhookUrl}
                     >
                       {webhookCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                     </Button>
@@ -257,14 +365,7 @@ export default function BuyerSettings() {
               </div>
 
               <div className="flex justify-end">
-                <Button
-                  onClick={() => {
-                    console.log("[v0] Saving webhook URL:", webhookUrl)
-                    // Show success feedback
-                  }}
-                >
-                  Save Integration
-                </Button>
+                <Button onClick={handleSaveIntegration}>Save Integration</Button>
               </div>
             </Card>
           </TabsContent>

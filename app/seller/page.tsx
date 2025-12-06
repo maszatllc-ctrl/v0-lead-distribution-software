@@ -5,18 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DollarSign, Database, Users, AlertCircle, TrendingUp, Plus } from "lucide-react"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import Link from "next/link"
-
-const revenueData = [
-  { date: "Jan 1", revenue: 420 },
-  { date: "Jan 5", revenue: 580 },
-  { date: "Jan 10", revenue: 720 },
-  { date: "Jan 15", revenue: 650 },
-  { date: "Jan 20", revenue: 890 },
-  { date: "Jan 25", revenue: 1020 },
-  { date: "Jan 30", revenue: 1150 },
-]
 
 const recentLeads = [
   {
@@ -169,31 +158,6 @@ export default function SellerDashboard() {
             <div className="mt-4 h-6" />
           </Card>
         </div>
-
-        {/* Revenue Chart */}
-        <Card className="p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-foreground">Revenue Over Time</h2>
-              <p className="text-sm text-muted-foreground mt-1">Last 30 days</p>
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={revenueData}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-              <XAxis dataKey="date" className="text-xs" />
-              <YAxis className="text-xs" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "8px",
-                }}
-              />
-              <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} dot={true} />
-            </LineChart>
-          </ResponsiveContainer>
-        </Card>
 
         {/* Recent Leads Sold */}
         <Card className="p-6">

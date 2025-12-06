@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 
 interface PaymentMethod {
   id: string
@@ -121,28 +122,29 @@ export default function WalletPage() {
 
     setTransactions([newTransaction, ...transactions])
     setIsAddFundsOpen(false)
+    toast.success(`$${amount.toFixed(2)} added to wallet`)
   }
 
   const handleSaveAutoRecharge = () => {
-    console.log("[v0] Saving auto-recharge settings:", {
-      enabled: autoRechargeEnabled,
-      threshold: rechargeThreshold,
-      amount: rechargeAmount,
-    })
     setIsAutoRechargeOpen(false)
+    toast.success("Auto-recharge settings saved")
   }
 
   const handleSaveSpendingLimit = () => {
-    console.log("[v0] Saving spending limit settings:", {
-      enabled: spendingLimitEnabled,
-      amount: spendingLimitAmount,
-      period: spendingLimitPeriod,
-    })
     setIsSpendingLimitOpen(false)
+    toast.success("Spending limit settings saved")
   }
 
   const handleRemoveCard = (id: string) => {
-    setPaymentMethods((prev) => prev.filter((method) => method.id !== id))
+    const cardToRemove = paymentMethods.find((m) => m.id === id)
+    const remainingCards = paymentMethods.filter((method) => method.id !== id)
+
+    if (cardToRemove?.isPrimary && remainingCards.length > 0) {
+      remainingCards[0].isPrimary = true
+    }
+
+    setPaymentMethods(remainingCards)
+    toast.success("Payment method removed")
   }
 
   const handleSetPrimary = (id: string) => {
@@ -152,6 +154,7 @@ export default function WalletPage() {
         isPrimary: method.id === id,
       })),
     )
+    toast.success("Primary payment method updated")
   }
 
   const handleAddCard = (cardData: { brand: string; last4: string; expiry: string }) => {
@@ -163,6 +166,7 @@ export default function WalletPage() {
       isPrimary: paymentMethods.length === 0,
     }
     setPaymentMethods((prev) => [...prev, newCard])
+    toast.success("Payment method added")
   }
 
   const displayedTransactions = showAllTransactions ? transactions : transactions.slice(0, 5)
