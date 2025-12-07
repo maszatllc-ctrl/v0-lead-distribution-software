@@ -92,7 +92,7 @@ model Seller {
   stripeAccountId       String?  @unique
   stripeOnboardingComplete Boolean @default(false)
   subscriptionStatus    SubscriptionStatus @default(TRIAL)
-  subscriptionTier      SubscriptionTier   @default(STARTER)
+  subscriptionTier      SubscriptionTier   @default(GROWTH)
   subscriptionId        String?  @unique
   currentPeriodEnd      DateTime?
   trialEndsAt           DateTime?
@@ -152,7 +152,7 @@ enum SubscriptionStatus {
 }
 
 enum SubscriptionTier {
-  STARTER
+  GROWTH
   PROFESSIONAL
   ENTERPRISE
 }

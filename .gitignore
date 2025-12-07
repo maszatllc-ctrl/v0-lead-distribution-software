@@ -40,3 +40,6 @@ next-env.d.ts
 # Prisma
 /prisma/*.db
 /prisma/*.db-journal
+
+# Don't commit .env.local (it has your credentials)
+.env.local
