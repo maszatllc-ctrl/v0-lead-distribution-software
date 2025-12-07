@@ -119,9 +119,9 @@ export async function POST(request: NextRequest) {
 
     // Get price ID for tier
     const priceIds: Record<string, string> = {
+      STARTER: process.env.STRIPE_PRICE_STARTER || '',
       GROWTH: process.env.STRIPE_PRICE_GROWTH || '',
       PROFESSIONAL: process.env.STRIPE_PRICE_PROFESSIONAL || '',
-      ENTERPRISE: process.env.STRIPE_PRICE_ENTERPRISE || '',
     }
 
     const priceId = priceIds[tier]

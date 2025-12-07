@@ -29,21 +29,53 @@ async function setupProducts() {
   try {
     console.log('Creating Stripe products and prices...\n')
 
-    // Growth Plan - $199/mo
+    // Starter Plan - $199/mo
+    const starterProduct = await stripe.products.create({
+      name: 'LeadFlow Starter',
+      description: 'Perfect for small agencies getting started - Up to 500 leads/mo, up to 5 buyers',
+      metadata: {
+        tier: 'starter',
+        maxLeadsPerMonth: '500',
+        maxBuyers: '5',
+        transactionFee: '5',
+      },
+    })
+
+    const starterPrice = await stripe.prices.create({
+      product: starterProduct.id,
+      unit_amount: 19900, // $199/month
+      currency: 'usd',
+      recurring: {
+        interval: 'month',
+        trial_period_days: 14,
+      },
+      metadata: {
+        tier: 'starter',
+      },
+    })
+
+    console.log('✅ Starter Plan Created:')
+    console.log(`   Product ID: ${starterProduct.id}`)
+    console.log(`   Price ID: ${starterPrice.id}`)
+    console.log(`   Price: $199/month`)
+    console.log(`   Limits: 500 leads/mo, 5 buyers max`)
+    console.log(`   Transaction Fee: 5%\n`)
+
+    // Growth Plan - $499/mo
     const growthProduct = await stripe.products.create({
       name: 'LeadFlow Growth',
-      description: 'Perfect for growing agencies - Up to 500 leads/mo, up to 10 buyers',
+      description: 'For growing agencies - Up to 2,000 leads/mo, unlimited buyers',
       metadata: {
         tier: 'growth',
-        maxLeadsPerMonth: '500',
-        maxBuyers: '10',
+        maxLeadsPerMonth: '2000',
+        maxBuyers: 'unlimited',
         transactionFee: '5',
       },
     })
 
     const growthPrice = await stripe.prices.create({
       product: growthProduct.id,
-      unit_amount: 19900, // $199/month
+      unit_amount: 49900, // $499/month
       currency: 'usd',
       recurring: {
         interval: 'month',
@@ -57,17 +89,17 @@ async function setupProducts() {
     console.log('✅ Growth Plan Created:')
     console.log(`   Product ID: ${growthProduct.id}`)
     console.log(`   Price ID: ${growthPrice.id}`)
-    console.log(`   Price: $199/month`)
-    console.log(`   Limits: 500 leads/mo, 10 buyers max`)
+    console.log(`   Price: $499/month`)
+    console.log(`   Limits: 2,000 leads/mo, unlimited buyers`)
     console.log(`   Transaction Fee: 5%\n`)
 
-    // Professional Plan - $499/mo
+    // Professional Plan - $999/mo
     const professionalProduct = await stripe.products.create({
       name: 'LeadFlow Professional',
-      description: 'For established agencies - Up to 2,000 leads/mo, unlimited buyers',
+      description: 'Unlimited everything - For high-volume operations',
       metadata: {
         tier: 'professional',
-        maxLeadsPerMonth: '2000',
+        maxLeadsPerMonth: 'unlimited',
         maxBuyers: 'unlimited',
         transactionFee: '5',
       },
@@ -75,7 +107,7 @@ async function setupProducts() {
 
     const professionalPrice = await stripe.prices.create({
       product: professionalProduct.id,
-      unit_amount: 49900, // $499/month
+      unit_amount: 99900, // $999/month
       currency: 'usd',
       recurring: {
         interval: 'month',
@@ -89,38 +121,6 @@ async function setupProducts() {
     console.log('✅ Professional Plan Created:')
     console.log(`   Product ID: ${professionalProduct.id}`)
     console.log(`   Price ID: ${professionalPrice.id}`)
-    console.log(`   Price: $499/month`)
-    console.log(`   Limits: 2,000 leads/mo, unlimited buyers`)
-    console.log(`   Transaction Fee: 5%\n`)
-
-    // Enterprise Plan - $999/mo
-    const enterpriseProduct = await stripe.products.create({
-      name: 'LeadFlow Enterprise',
-      description: 'Unlimited everything - For high-volume operations',
-      metadata: {
-        tier: 'enterprise',
-        maxLeadsPerMonth: 'unlimited',
-        maxBuyers: 'unlimited',
-        transactionFee: '5',
-      },
-    })
-
-    const enterprisePrice = await stripe.prices.create({
-      product: enterpriseProduct.id,
-      unit_amount: 99900, // $999/month
-      currency: 'usd',
-      recurring: {
-        interval: 'month',
-        trial_period_days: 14,
-      },
-      metadata: {
-        tier: 'enterprise',
-      },
-    })
-
-    console.log('✅ Enterprise Plan Created:')
-    console.log(`   Product ID: ${enterpriseProduct.id}`)
-    console.log(`   Price ID: ${enterprisePrice.id}`)
     console.log(`   Price: $999/month`)
     console.log(`   Limits: Unlimited leads, unlimited buyers`)
     console.log(`   Transaction Fee: 5%\n`)
@@ -128,16 +128,16 @@ async function setupProducts() {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
     console.log('Add these to your .env.local file:')
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n')
+    console.log(`STRIPE_PRICE_STARTER="${starterPrice.id}"`)
     console.log(`STRIPE_PRICE_GROWTH="${growthPrice.id}"`)
     console.log(`STRIPE_PRICE_PROFESSIONAL="${professionalPrice.id}"`)
-    console.log(`STRIPE_PRICE_ENTERPRISE="${enterprisePrice.id}"`)
     console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n')
 
     console.log('✅ All products created successfully!')
     console.log('\n📋 Pricing Summary:')
-    console.log('   Growth:        $199/mo + 5% fee (500 leads, 10 buyers)')
-    console.log('   Professional:  $499/mo + 5% fee (2000 leads, unlimited buyers)')
-    console.log('   Enterprise:    $999/mo + 5% fee (unlimited)')
+    console.log('   Starter:       $199/mo + 5% fee (500 leads, 5 buyers)')
+    console.log('   Growth:        $499/mo + 5% fee (2000 leads, unlimited buyers)')
+    console.log('   Professional:  $999/mo + 5% fee (unlimited)')
   } catch (error: any) {
     console.error('Error creating products:', error.message)
     process.exit(1)
