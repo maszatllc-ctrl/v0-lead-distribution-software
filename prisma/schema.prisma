@@ -153,8 +153,8 @@ enum SubscriptionStatus {
 
 enum SubscriptionTier {
   STARTER
+  GROWTH
   PROFESSIONAL
-  ENTERPRISE
 }
 
 // ===================================

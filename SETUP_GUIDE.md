@@ -10,7 +10,7 @@ I've implemented a **complete, production-ready backend** with:
 - ✅ **Lead Distribution Engine** (automated, real-time)
 - ✅ **Stripe Payments** (buyer wallets, auto-recharge)
 - ✅ **Stripe Connect** (seller payouts)
-- ✅ **Stripe Subscriptions** (seller billing - $49/$149/$499/mo)
+- ✅ **Stripe Subscriptions** (seller billing - $199/$499/$999/mo)
 - ✅ **Webhooks** (complete Stripe event handling)
 - ✅ **Notifications** (Email/SMS/Webhooks with usage tracking)
 - ✅ **Reporting & Analytics** (comprehensive APIs)
@@ -61,15 +61,15 @@ npx ts-node scripts/setup-stripe-products.ts
 ```
 
 This creates 3 subscription tiers:
-- **Starter**: $49/month
-- **Professional**: $149/month
-- **Enterprise**: $499/month
+- **Starter**: $199/month (500 leads/mo, 5 buyers)
+- **Growth**: $499/month (2,000 leads/mo, unlimited buyers)
+- **Professional**: $999/month (unlimited leads & buyers)
 
 Copy the price IDs it outputs and add them to `.env.local`:
 ```env
 STRIPE_PRICE_STARTER="price_xxx"
+STRIPE_PRICE_GROWTH="price_xxx"
 STRIPE_PRICE_PROFESSIONAL="price_xxx"
-STRIPE_PRICE_ENTERPRISE="price_xxx"
 ```
 
 ### Step 5: Set Up Stripe Webhooks
